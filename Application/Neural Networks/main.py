@@ -10,7 +10,7 @@ from sklearn.utils import shuffle
 
 emotions = ["anger", "disgust", "fear", "happy", "sadness", "surprise","neutral"] #Define emotions
 
-dir1='F:\Chaos\EmotionRecognition\Application\sorted_set'
+dir1='F:\Chaos\EmotionRecognition\Application\\trainData'
 
 
 def shuffle_files(emotion):

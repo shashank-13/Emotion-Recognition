@@ -156,10 +156,13 @@ def drawLandMarks(image):
 
     cv2.imshow('image',image)
 
-image1=cv2.imread('temp1.jpg')
+
+image = cv2.imread('1.jpg')
+print (image.shape)
+'''image1=cv2.imread('temp1.jpg')
 drawLandMarks(image1)
 cv2.waitKey(0)
-cv2.destroyAllWindows()
+cv2.destroyAllWindows()'''
 #image2=cv2.imread('anger_326.jpg')
 #drawLandMarks(image2)
 #checkDetect('F:\Chaos\EmotionRecognition\Application\combineData\disgust')
