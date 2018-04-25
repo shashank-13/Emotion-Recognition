@@ -4,6 +4,8 @@ import cv2
 import numpy as np
 import scipy.misc
 
+new_emotions = ["disgust","happy", "neutral", "surprise"] #Define emotions
+
 def readImages():
 
     width,height=48,48

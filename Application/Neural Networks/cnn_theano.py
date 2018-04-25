@@ -1,3 +1,5 @@
+#For Warnings
+import warnings
 #import all the stuffs
 import numpy as np
 import theano
@@ -13,11 +15,13 @@ from sklearn.utils import shuffle
 from datetime import datetime
 import cv2
 
+
+
 #Loading Functions
 
 emotions = ["anger", "disgust", "fear", "happy", "sadness", "surprise","neutral"] #Define emotions
 
-dir1='F:\Chaos\EmotionRecognition\Application\sorted_set'
+dir1='F:\Chaos\EmotionRecognition\Application\\trainData'
 
 def shuffle_files(emotion):
 
@@ -77,10 +81,6 @@ def init_filter(shape,poolsz):
 #Convolution and Pooling
 def convpool(X,W,b,poolsize=(2,2)):
 
-    print ('Inside Convolution and Pooling\n\n\n')
-
-    print ('{0} {1} {2}'.format(X.shape,W.shape,b.shape))
-
     conv_out = conv2d(input=X,filters=W)
     pooled_out = pool.pool_2d(
         input = conv_out,
@@ -125,7 +125,7 @@ def fit_cNN():
     W2_init = init_filter(W2_shape,pool_size)
     b2_init = np.zeros(W2_shape[0],dtype=np.float32)
 
-    W3_init = np.random.randn(W2_shape[0]*5*5,M)/np.sqrt(W2_shape[0]*5*5 +M)
+    W3_init = np.random.randn(constant,M)/np.sqrt(constant +M)
     b3_init = np.zeros(M,np.float32)
 
     W4_init = np.random.randn(M,K) / np.sqrt(M+K)
@@ -158,7 +158,7 @@ def fit_cNN():
     dW4 = theano.shared(np.zeros(W4_init.shape,dtype=np.float32),'dW4')
     db4 = theano.shared(np.zeros(b4_init.shape,dtype=np.float32),'db4')
 
-    print ('\n\n\n')
+    '''print ('\n\n\n')
 
     print ('Train Input ={0} ,Train Output ={1} , Test Input ={2} ,Test Output ={3}'.format(X_train.shape,Y_train.shape,prediction_Data.shape,prediction_labels.shape))
 
@@ -166,7 +166,7 @@ def fit_cNN():
 
     print ('b1 ={0} ,b2 ={1} , b3={2} , b4 ={3}'.format(b1_init.shape,b2_init.shape,b3_init.shape,b4_init.shape))
 
-    print ('\n\n\n')
+    print ('\n\n\n')'''
     Z1=convpool(X,W1,b1)
     Z2=convpool(Z1,W2,b2)
 
@@ -262,4 +262,7 @@ def fit_cNN():
 
 
 #Call CNN Train Method
-fit_cNN()
+with warnings.catch_warnings():
+    warnings.simplefilter("ignore")
+    fit_cNN()
+#fit_cNN()

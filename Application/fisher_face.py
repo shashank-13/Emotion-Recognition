@@ -3,9 +3,11 @@ import cv2
 import numpy as np
 import random
 import sys
+import os
 
 emotions = ["anger", "disgust", "fear", "happy","neutral", "sadness", "surprise"] #Define emotions
-new_emotions = ["neutral","anger", "happy", "sadness"] #Define emotions
+new_emotions = ["anger","happy", "neutral", "sadness"] #Define emotions
+dest='F:\Chaos\EmotionRecognition\Application\Results'
 
 fishface = cv2.face.FisherFaceRecognizer_create() #Initialize fisher face classifier
 #fishface.read('F:\Chaos\EmotionRecognition\Application\model\\raw\model.xml')
@@ -13,7 +15,7 @@ face_classifier = cv2.CascadeClassifier('F:\Chaos\EmotionRecognition\Download_CK
 face_classifier2 = cv2.CascadeClassifier('F:\Chaos\EmotionRecognition\Download_CK+\haarcascade_frontalface_alt2.xml')
 face_classifier3=cv2.CascadeClassifier('F:\Chaos\EmotionRecognition\Download_CK+\haarcascade_frontalface_alt.xml')
 face_classifier4=cv2.CascadeClassifier('F:\Chaos\EmotionRecognition\Download_CK+\haarcascade_frontalface_alt_tree.xml')
-dir2='F:\Chaos\EmotionRecognition\Application\model\images'
+dir2='F:\Chaos\EmotionRecognition\Application\sorted_set'
 dir1='F:\Chaos\EmotionRecognition\Application\combineData'
 test='F:\Chaos\EmotionRecognition\Application\dataset'
 
@@ -33,20 +35,20 @@ def get_Data():
     prediction_data = []
     prediction_labels = []
 
-    for emotion in emotions:
+    for emotion in new_emotions:
         training, prediction = shuffle_files(emotion)
         #Append data to training and prediction list, and generate labels 0-7
         for item in training:
             image = cv2.imread(item)
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             training_data.append(gray)
-            training_labels.append(emotions.index(emotion))
+            training_labels.append(new_emotions.index(emotion))
 
         for item in prediction:
             image = cv2.imread(item)
             gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             prediction_data.append(gray)
-            prediction_labels.append(emotions.index(emotion))
+            prediction_labels.append(new_emotions.index(emotion))
 
     return training_data, training_labels, prediction_data, prediction_labels
 
@@ -54,13 +56,16 @@ def get_Data():
 def classify_Data():
 
     training_data, training_labels, prediction_data, prediction_labels = get_Data()
-    fishface.train(training_data, np.asarray(training_labels))
+    print ('Train data length ={0} , Test data length ={1}'.format(len(training_data),len(prediction_data)))
 
+    fishface.train(training_data, np.asarray(training_labels))
+    prediction_result=[]
     cnt = 0
     correct = 0
     incorrect = 0
     for image in prediction_data:
         pred, conf = fishface.predict(image)
+        prediction_result.append(pred)
         #print ('expected {0} got {1}'.format(emotions[prediction_labels[cnt]],emotions[pred]))
         if pred == prediction_labels[cnt]:
             correct += 1
@@ -69,7 +74,7 @@ def classify_Data():
             incorrect += 1
             cnt += 1
     #print ('{0} correct and {1} incorrect'.format(correct,incorrect))
-    return ((100*correct)/(correct + incorrect))
+    return ((100*correct)/(correct + incorrect)),prediction_data,prediction_labels,prediction_result
 
 
 def getSlicedData(emotion):
@@ -196,35 +201,23 @@ def predict_Particular(emotion):
 
 #Now run it
 
-#generateModel()            #for generating the model
-#predict_Particular('sadness') #for predicting a directory
-fishface.read('F:\Chaos\EmotionRecognition\Application\model\\raw\\babyModel.xml')
-#predict_Particular('anger')
-for emotion in new_emotions:
-    predict_Particular(emotion)
+metascore = []
+highestScore = 0.0
+final_prediction_label=[]
+final_prediction_result=[]
+final_prediction_image=[]
 
-'''image = cv2.imread('F:\Chaos\EmotionRecognition\Application\model\images\\ray_joy_1.png')
-predictResult(image)  ''' #For Testing an images
-
-'''cap = cv2.VideoCapture(0)
-
-while(True):
-    # Capture frame-by-frame
-    ret, frame = cap.read()
-
-    # Our operations on the frame come here
-    cv2.waitKey(3000)
-    liveFromCam(frame)
-
-# When everything done, release the capture
-cap.release()
-cv2.destroyAllWindows()'''
-
-
-'''metascore = []
 for i in range(0,10):
-    correct = classify_Data()
-    print ("got {0},percent correct!".format(correct))
+    correct,prediction_data,prediction_labels,prediction_result = classify_Data()
+    if (correct > highestScore):
+        highestScore = correct
+        final_prediction_image=prediction_data
+        final_prediction_label=prediction_labels
+        final_prediction_result=prediction_result
+    print ("Score {0}".format(correct))
     metascore.append(correct)
 
-print ("\n\nend score: {0}, percent correct!".format(np.mean(metascore)))'''
+print ("\n\nMean-Accuracy: {0}, Highest-Score: {1} ".format(np.mean(metascore),highestScore))
+
+for i in range(len(final_prediction_result)):
+    cv2.imwrite(os.path.join(dest,new_emotions[final_prediction_label[i]],new_emotions[final_prediction_result[i]]+str(i)+'.jpg'),final_prediction_image[i])

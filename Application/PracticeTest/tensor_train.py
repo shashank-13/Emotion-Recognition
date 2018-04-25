@@ -2,15 +2,54 @@
 import numpy as np
 import tensorflow as tf
 import matplotlib.pyplot as plt
-from main import get_Data
-import cv2
 import os
+import glob
+import cv2
+import dlib
+import math
+import random
+from sklearn.utils import shuffle
 
+emotions = ["anger", "disgust", "fear", "happy", "sadness", "surprise","neutral"] #Define emotions
 new_emotions = ["anger","happy", "neutral", "sadness"] #Define emotions
-dest='F:\Chaos\EmotionRecognition\Application\Results'
+dir1='F:\Chaos\EmotionRecognition\Application\\sorted_set'
 
 def error_rate(p,t):
     return np.mean(p!=t)
+
+def shuffle_files(emotion):
+
+    files = glob.glob(dir1+"\\"+emotion+"\*")
+    random.shuffle(files)
+    training = files[:int(len(files)*0.8)] #get first 80% of file list
+    prediction = files[-int(len(files)*0.2):] #get last 20% of file list
+    return training, prediction
+
+def get_Data():                     # Get Data of the network for training and prediction
+
+    training_data=[]
+    training_labels=[]
+    prediction_data=[]
+    prediction_labels=[]
+
+    for emotion in new_emotions:
+
+        training,prediction = shuffle_files(emotion)
+
+        for item in training:
+            image = cv2.imread(item,0)
+            image = np.array(image).flatten()
+            training_data.append(image)
+            training_labels.append(new_emotions.index(emotion))
+
+        for item in prediction:
+            image = cv2.imread(item,0)
+            image = np.array(image).flatten()
+            prediction_data.append(image)
+            prediction_labels.append(new_emotions.index(emotion))
+
+
+    return training_data,training_labels,prediction_data,prediction_labels
 
 def fit_Tensor():
     #General Set Up
@@ -19,9 +58,9 @@ def fit_Tensor():
     prediction_data=[]
     prediction_labels = []
 
-    X_train,Y_train,prediction_data,prediction_labels,original_test= get_Data()
+    X_train,Y_train,prediction_data,prediction_labels = get_Data()
 
-    print ('Train-Data Length {0} , Test-Data Length {1}'.format(len(X_train),len(prediction_data)))
+    print ('Train data length ={0} , Test data length ={1}'.format(len(X_train),len(prediction_data)))
     #print(X)
     X_train=np.array(X_train)/255.0
     Y_train=np.array(Y_train)
@@ -83,32 +122,34 @@ def fit_Tensor():
     max_iter=2000
     print_period=50
 
+    #For saving purpose
+    saver = tf.train.Saver()
+
     with tf.Session() as session:
-        session.run(init)
+
+        saver.restore(session,'/PracticeTest/new_tensor_model.ckpt')
+        '''session.run(init)
 
         for i in range(max_iter):
             session.run(train_op, feed_dict={X: X_train, T: T_y})
             if i % print_period == 0:
-                '''test_cost = session.run(cost, feed_dict={X: prediction_data, T: T_x})
-                prediction = session.run(predict_op, feed_dict={X: prediction_data})
-                err = error_rate(prediction, prediction_labels)#Testing on Test test'''
                 test_cost = session.run(cost, feed_dict={X: X_train, T: T_y})
                 prediction = session.run(predict_op, feed_dict={X: X_train})
                 err = error_rate(prediction, Y_train) #Testing on Train test
                 print("Iteration ={0}, Cost ={1}, Score ={2}".format(i,test_cost, 1-err))
-                costs.append(test_cost)
+                costs.append(test_cost)'''
 
         #Prediction on test Set
         test_cost = session.run(cost, feed_dict={X: prediction_data, T: T_x})
         prediction = session.run(predict_op, feed_dict={X: prediction_data})
         err = error_rate(prediction, prediction_labels)
+
         print("Test Results : , Cost ={0}, Score ={1}".format(test_cost, 1-err))
+        '''save_path = saver.save(session,'/PracticeTest/new_tensor_model.ckpt')
+        print ('Model saved in path {0}'.format(save_path))'''
 
-        for i in range(len(prediction)):
-            cv2.imwrite(os.path.join(dest,new_emotions[prediction_labels[i]],new_emotions[prediction[i]]+str(i)+'.jpg'),original_test[i])
-
-    plt.plot(costs)
-    plt.show()
+    '''plt.plot(costs)
+    plt.show()'''
 
 if __name__ == '__main__':
     fit_Tensor()

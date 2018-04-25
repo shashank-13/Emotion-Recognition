@@ -9,15 +9,17 @@ import itertools
 from sklearn.svm import SVC
 import pickle
 import sys
+import os
 
 emotions = ["anger", "disgust", "fear", "happy", "sadness", "surprise","neutral"] #Define emotions
-new_emotions = ["neutral","anger", "happy", "sadness"] #Define emotions
+new_emotions = ["anger","happy", "neutral", "sadness"] #Define emotions
+dest='F:\Chaos\EmotionRecognition\Application\Results'
 
 clahe = cv2.createCLAHE(clipLimit=2.0, tileGridSize=(8,8))
 detector = dlib.get_frontal_face_detector() #Face detector
 predictor = dlib.shape_predictor("F:\Chaos\EmotionRecognition\Download_CK+\shape_predictor_68_face_landmarks.dat\shape_predictor_68_face_landmarks.dat") #Landmark identifier. Set the filename to whatever you named the downloaded file
 dir2='F:\Chaos\EmotionRecognition\Application\model\images'
-dir1='F:\Chaos\EmotionRecognition\Application\combineData'
+dir1='F:\Chaos\EmotionRecognition\Application\\testData'
 dir3='F:\Chaos\EmotionRecognition\Application\dataset'
 dir4='F:\Chaos\EmotionRecognition\Application\\trainData'
 dir5='F:\Chaos\EmotionRecognition\Application\sorted_set'
@@ -141,8 +143,9 @@ def get_Data():                              # Function to return all data
     training_labels = []
     prediction_data = []
     prediction_labels = []
+    original_test=[]
 
-    for emotion in emotions:
+    for emotion in new_emotions:
 
         training, prediction = shuffle_files(emotion)
         #Append data to training and prediction list, and generate labels 0-7
@@ -153,7 +156,7 @@ def get_Data():                              # Function to return all data
             landmarks_Vector=getLandmarks(clahe_image)
             if landmarks_Vector:
                 training_data.append(landmarks_Vector)
-                training_labels.append(emotions.index(emotion))
+                training_labels.append(new_emotions.index(emotion))
 
         for item in prediction:
 
@@ -162,36 +165,46 @@ def get_Data():                              # Function to return all data
             clahe_image = clahe.apply(gray)
             landmarks_Vector=getLandmarks(clahe_image)
             if landmarks_Vector:
+                original_test.append(image)
                 prediction_data.append(landmarks_Vector)
-                prediction_labels.append(emotions.index(emotion))
+                prediction_labels.append(new_emotions.index(emotion))
 
 
-    return training_data, training_labels, prediction_data, prediction_labels
+    return training_data, training_labels, prediction_data, prediction_labels,original_test
 
 def applySVM():
 
     clf = SVC(kernel='linear', probability=True, tol=1e-3)#, verbose = True) #Set the classifier as a support vector machines with polynomial kernel
 
     accuracy_List=[]
+    highestScore = 0.0
+    final_prediction_label=[]
+    final_prediction_result=[]
+    final_prediction_image=[]
 
     for i in range(0,10):
 
-        training_data, training_labels, prediction_data, prediction_labels = get_Data()
-        print ('Got Data')
-        print ('{0} {1} {2} {3}'.format(len(training_data),len(training_labels),len(prediction_data),len(prediction_labels)))
+        training_data, training_labels, prediction_data, prediction_labels,original_test = get_Data()
+        print ('Train data length ={0} , Test data length ={1}'.format(len(training_data),len(prediction_data)))
 
         npar_train = np.array(training_data)
         npar_trainlabels = np.array(training_labels)
 
         clf.fit(npar_train,npar_trainlabels)
         npar_pred=np.array(prediction_data)
-
+        pred_result=clf.predict(npar_pred)
         pred_score = clf.score(npar_pred,prediction_labels)
+        if (pred_score > highestScore):
+            highestScore = pred_score
+            final_prediction_label=prediction_labels
+            final_prediction_result=pred_result
+            final_prediction_image=original_test
         print ('Score {0}'.format(pred_score))
         accuracy_List.append(pred_score)
 
-    print ('Mean Accuracy {0}'.format(np.mean(accuracy_List)))
-
+    print ('Mean-Accuracy {0}, Highest-Score {1}'.format(np.mean(accuracy_List),highestScore))
+    for i in range(len(final_prediction_result)):
+        cv2.imwrite(os.path.join(dest,new_emotions[final_prediction_label[i]],new_emotions[final_prediction_result[i]]+str(i)+'.jpg'),final_prediction_image[i])
 
 
 applySVM()

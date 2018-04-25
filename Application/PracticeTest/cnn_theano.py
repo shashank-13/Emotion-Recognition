@@ -13,7 +13,6 @@ from sklearn.utils import shuffle
 from datetime import datetime
 import cv2
 
-from theano import function
 
 #Loading Functions
 
@@ -124,7 +123,7 @@ def fit_cNN():
     W2_init = init_filter(W2_shape,pool_size)
     b2_init = np.zeros(W2_shape[0],dtype=np.float32)
 
-    W3_init = np.random.randn(W2_shape[0]*5*5,M)/np.sqrt(W2_shape[0]*5*5 +M)
+    W3_init = np.random.randn(constant,M)/np.sqrt(constant+M)
     b3_init = np.zeros(M,np.float32)
 
     W4_init = np.random.randn(M,K) / np.sqrt(M+K)
@@ -133,7 +132,6 @@ def fit_cNN():
     X=T.tensor4('X',dtype='float32')
     Y=T.ivector('T')
 
-    print (X.shape.eval({X: X_train}))
 
     W1=theano.shared(W1_init,'W1')
     b1=theano.shared(b1_init,'b1')
@@ -168,15 +166,16 @@ def fit_cNN():
     print ('b1 ={0} ,b2 ={1} , b3={2} , b4 ={3}'.format(b1_init.shape,b2_init.shape,b3_init.shape,b4_init.shape))
 
     print ('\n\n\n')
+
     Z1=convpool(X_train,W1_init,b1_init)
     Z2=convpool(Z1,W2_init,b2_init)
 
 
-    #print ('{0} {1} {2}'.format(Z2.shape,W3_init.shape,b3_init))
+
     Z3=relu(Z2.flatten(ndim=2).dot(W3)+b3)
     pY=T.nnet.softmax(Z3.dot(W4)+b4)
 
-    '''params = (W1,b1,W2,b2,W3,b3,W4,b4)
+    params = (W1,b1,W2,b2,W3,b3,W4,b4)
     reg_cost = reg*np.sum((param*param).sum() for param in params)
     cost = -(Y * T.log(pY)).sum() + reg_cost
     prediction = T.argmax(pY,axis=1)
@@ -259,7 +258,7 @@ def fit_cNN():
     #Testing on test set
     c, prediction_val = get_prediction(prediction_data,prediction_labels)
     e = error_rate(prediction_val, prediction_labels)
-    print ('Cost = {0} , Test Score = {1} ,Error ={2}'.format(c,1-e,e))'''
+    print ('Cost = {0} , Test Score = {1} ,Error ={2}'.format(c,1-e,e))
 
 
 #Call CNN Train Method

@@ -9,16 +9,18 @@ import random
 from sklearn.utils import shuffle
 
 emotions = ["anger", "disgust", "fear", "happy", "sadness", "surprise","neutral"] #Define emotions
+new_emotions = ["anger","happy", "neutral", "sadness"] #Define emotions
 
-dir1='F:\Chaos\EmotionRecognition\Application\\trainData'
+dir1='F:\Chaos\EmotionRecognition\Application\\sorted_set'
+dest='F:\Chaos\EmotionRecognition\Application\Results'
 
 
 def shuffle_files(emotion):
 
     files = glob.glob(dir1+"\\"+emotion+"\*")
     random.shuffle(files)
-    training = files[:int(len(files)*0.8)] #get first 80% of file list
-    prediction = files[-int(len(files)*0.2):] #get last 20% of file list
+    training = files[:int(len(files)*0.80)] #get first 80% of file list
+    prediction = files[-int(len(files)*0.20):] #get last 20% of file list
     return training, prediction
 
 def forward(X,W1,b1,W2,b2):   #For forward propagation
@@ -28,7 +30,6 @@ def forward(X,W1,b1,W2,b2):   #For forward propagation
     expA= np.exp(A)
     Y=expA/expA.sum(axis=1,keepdims=True)
     return Y,Z                  # Return output and hidden units
-
 
 def score(Y,P):         #Classification score
 
@@ -41,7 +42,6 @@ def score(Y,P):         #Classification score
         n_total+=1
 
     return n_correct/n_total
-
 
 def derivative_w2(Z,T,Y):
 
@@ -76,27 +76,27 @@ def get_Data():                     # Get Data of the network for training and p
     training_labels=[]
     prediction_data=[]
     prediction_labels=[]
+    original_test=[]
 
-    for emotion in emotions:
-
+    for emotion in new_emotions:
         training,prediction = shuffle_files(emotion)
 
         for item in training:
             image = cv2.imread(item,0)
             image = np.array(image).flatten()
             training_data.append(image)
-            training_labels.append(emotions.index(emotion))
+            training_labels.append(new_emotions.index(emotion))
 
         for item in prediction:
-            image = cv2.imread(item,0)
+            image = cv2.imread(item)
+            original_test.append(image)
+            image=cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
             image = np.array(image).flatten()
             prediction_data.append(image)
-            prediction_labels.append(emotions.index(emotion))
+            prediction_labels.append(new_emotions.index(emotion))
 
 
-    return training_data,training_labels,prediction_data,prediction_labels
-
-
+    return training_data,training_labels,prediction_data,prediction_labels,original_test
 
 def fit_Full():
 
@@ -105,19 +105,15 @@ def fit_Full():
     prediction_data=[]
     prediction_labels = []
 
-    X,Y,prediction_data,prediction_labels = get_Data()
+    X,Y,prediction_data,prediction_labels,original_test = get_Data()
 
-    print ('Train data length ={0} , Test data length ={1}'.format(len(X),len(prediction_data)))
+    print ('Train-Data Length {0} , Test-Data Length {1}'.format(len(X),len(prediction_data)))
     #print(X)
     X=np.array(X)/255.0
     Y=np.array(Y)
 
     prediction_data = np.array(prediction_data)/255.0
     prediction_labels = np.array(prediction_labels)
-
-
-
-
 
     N,D = X.shape
 
@@ -129,8 +125,6 @@ def fit_Full():
 
     for i in range(N):
         T[i,Y[i]] =1
-
-
 
     # randomly initialize weights
     W1 = np.random.randn(D, M) / np.sqrt(D+M)
@@ -158,10 +152,9 @@ def fit_Full():
     decay_rate = 0.999
     eps = 1e-10
 
-    for i in range(1000):
+    for i in range(4000):
 
         output,hidden = forward(X,W1,b1,W2,b2)
-
 
         gW2= derivative_w2(hidden,T,output) +reg*W2
         gb1= derivative_b1(T,output,W2,hidden) + reg*b1
@@ -197,8 +190,8 @@ def fit_Full():
             e = error_rate(Y,P)
             if e < best_validation_error:
                 best_validation_error = e
-            print ('Cost = {0} , Training Score = {1} ,Error ={2}'.format(c,r,e))
-            costs.append(c)
+            print ('Cost = {0} , Training Score = {1} ,Error ={2}'.format(abs(c),r,e))
+            costs.append(abs(c))
 
     print("best_validation_error:", best_validation_error)
 
@@ -211,8 +204,8 @@ def fit_Full():
     P=np.argmax(output,axis =1)
     print ('Test Score {0}'.format(score(prediction_labels,P)))  # Final output
 
-
-
+    for i in range(len(P)):
+        cv2.imwrite(os.path.join(dest,new_emotions[prediction_labels[i]],new_emotions[P[i]]+str(i)+'.jpg'),original_test[i])
 
     #np.savetxt(os.path.join(temp_Dir,'weight1'),)
 
@@ -302,9 +295,6 @@ def fit_batch():
             cache_W1 = decay_rate*cache_W1 + (1 - decay_rate)*gW1*gW1
             cache_b1 = decay_rate*cache_b1 + (1 - decay_rate)*gb1*gb1
 
-
-
-
             W2 += (dW2/(np.sqrt(cache_W2)+eps))
             b1 += (db1/(np.sqrt(cache_b1)+eps))
             W1 += (dW1/(np.sqrt(cache_W1)+eps))
@@ -320,8 +310,8 @@ def fit_batch():
                 e = error_rate(y,P)
                 if e < best_validation_error:
                     best_validation_error = e
-                print ('Cost = {0} , Training Score = {1} ,Error ={2}'.format(c,r,e))
-                costs.append(c)
+                print ('Cost = {0} , Training Score = {1} ,Error ={2}'.format(abs(c),r,e))
+                costs.append(abs(c))
 
     print("best_validation_error:", best_validation_error)
 
